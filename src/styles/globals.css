@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: var(--canvas);
+  --color-canvas-subtle: var(--canvas-subtle);
+  --color-panel: var(--panel);
+  --color-panel-border: var(--panel-border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+}
+
+:root {
+  --canvas: #f9fafb; /* gray-50 */
+  --canvas-subtle: #f3f4f6; /* gray-100 */
+  --panel: #ffffff;
+  --panel-border: #e5e7eb; /* gray-200 */
+  --text-main: #111827; /* gray-900 */
+  --text-muted: #6b7280; /* gray-500 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #111827; /* gray-900 */
+    --canvas-subtle: #1f2937; /* gray-800 */
+    --panel: #030712; /* gray-950 */
+    --panel-border: #374151; /* gray-700 */
+    --text-main: #f9fafb; /* gray-50 */
+    --text-muted: #9ca3af; /* gray-400 */
+  }
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--text-main);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
