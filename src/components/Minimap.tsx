@@ -6,6 +6,7 @@ const MINIMAP_HEIGHT = 40;
 
 export function Minimap() {
   const { state, dispatch } = useStore();
+  const { requests, viewport } = state;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ dragging: boolean; startX: number; startViewport: { startMs: number; endMs: number } }>({
@@ -24,7 +25,6 @@ export function Minimap() {
     canvas.width = W;
     canvas.height = H;
 
-    const { requests, viewport } = state;
     const total = viewport.totalMs || 1;
 
     ctx.clearRect(0, 0, W, H);
@@ -45,20 +45,19 @@ export function Minimap() {
     ctx.strokeStyle = '#4f8ef7';
     ctx.lineWidth = 1;
     ctx.strokeRect(winX, 0, winW, H);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.requests, state.viewport]);
+  }, [requests, viewport]);
 
   const getMs = useCallback((clientX: number): number => {
     const container = containerRef.current;
     if (!container) return 0;
     const rect = container.getBoundingClientRect();
     const ratio = (clientX - rect.left) / rect.width;
-    return ratio * state.viewport.totalMs;
-  }, [state.viewport.totalMs]);
+    return ratio * viewport.totalMs;
+  }, [viewport.totalMs]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const clickMs = getMs(e.clientX);
-    const { startMs, endMs } = state.viewport;
+    const { startMs, endMs } = viewport;
     const windowMs = endMs - startMs;
     dragRef.current = {
       dragging: true,
@@ -71,13 +70,13 @@ export function Minimap() {
       dispatch({ type: 'SET_VIEWPORT', viewport: { startMs: newStart, endMs: newStart + windowMs } });
     }
     dispatch({ type: 'SET_IS_DRAGGING', value: true });
-  }, [state.viewport, dispatch, getMs]);
+  }, [viewport, dispatch, getMs]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragRef.current.dragging) return;
     const container = containerRef.current;
     if (!container) return;
-    const { totalMs } = state.viewport;
+    const { totalMs } = viewport;
     const rect = container.getBoundingClientRect();
     const deltaRatio = (e.clientX - dragRef.current.startX) / rect.width;
     const deltaMs = deltaRatio * totalMs;
@@ -87,7 +86,7 @@ export function Minimap() {
     if (newStart < 0) newStart = 0;
     if (newStart + windowMs > totalMs) newStart = totalMs - windowMs;
     dispatch({ type: 'SET_VIEWPORT', viewport: { startMs: Math.round(newStart), endMs: Math.round(newStart + windowMs) } });
-  }, [state.viewport, dispatch]);
+  }, [viewport, dispatch]);
 
   const handleMouseUp = useCallback(() => {
     dragRef.current.dragging = false;

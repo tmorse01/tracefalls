@@ -48,15 +48,18 @@ export const WaterfallRow = React.memo(function WaterfallRow({
 }: WaterfallRowProps) {
   const { dispatch } = useStore();
   const rowRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = React.useState(false);
   const [showTooltip, setShowTooltip] = React.useState(false);
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
     dispatch({ type: 'SET_HOVER_MS', ms: request.startMs });
     tooltipTimer.current = setTimeout(() => setShowTooltip(true), 400);
   }, [dispatch, request.startMs]);
 
   const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
     dispatch({ type: 'SET_HOVER_MS', ms: null });
     if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
     setShowTooltip(false);
@@ -79,6 +82,8 @@ export const WaterfallRow = React.memo(function WaterfallRow({
 
   const bgColor = isSelected
     ? 'var(--bg-row-selected)'
+    : isHovered
+    ? 'var(--bg-row-hover)'
     : 'transparent';
 
   return (
@@ -94,8 +99,6 @@ export const WaterfallRow = React.memo(function WaterfallRow({
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'var(--bg-row-selected)' : 'var(--bg-row-hover)'; }}
-      onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.background = bgColor; }}
       role="row"
       aria-selected={isSelected}
     >

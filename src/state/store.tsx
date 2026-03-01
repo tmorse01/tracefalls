@@ -164,8 +164,8 @@ export function useStore() {
 
 export function useFilteredSortedRequests() {
   const { state } = useStore();
+  const { requests, filters, sort } = state;
   return useMemo(() => {
-    const { requests, filters, sort } = state;
     let result = requests;
 
     if (filters.text) {
@@ -193,6 +193,5 @@ export function useFilteredSortedRequests() {
       }
       return sort.direction === 'asc' ? diff : -diff;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.requests, state.filters, state.sort]);
+  }, [requests, filters, sort]);
 }
