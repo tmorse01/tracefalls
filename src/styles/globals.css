@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  /* Backgrounds */
+  --bg-base: #0a0e27;
+  --bg-surface: #1a1d3a;
+  --bg-row-hover: #2a2d4a;
+  --bg-row-selected: #1a3a5f;
+  --border: #1a2d4a;
+
+  /* Text */
+  --text-primary: #e0e6ff;
+  --text-secondary: #8b9dc3;
+  --text-muted: #4a5578;
+
+  /* Accent */
+  --accent-blue: #00d9ff;
+  --accent-glow: rgba(0, 217, 255, 0.12);
+
+  /* Status */
+  --status-2xx: #00f5a0;
+  --status-3xx: #00d9ff;
+  --status-4xx: #ff6b9d;
+  --status-5xx: #ff8c42;
+  --status-other: #c084fc;
+
+  /* Timing phases */
+  --phase-dns: #c084fc;
+  --phase-connect: #00d9ff;
+  --phase-ssl: #00f5a0;
+  --phase-send: #fbbf24;
+  --phase-wait: #64b5f6;
+  --phase-receive: #ff6b9d;
+
+  /* HTTP methods */
+  --method-get: #00d9ff;
+  --method-post: #00f5a0;
+  --method-put: #fbbf24;
+  --method-delete: #ff6b9d;
+  --method-patch: #c084fc;
+  --method-default: #4a5578;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
