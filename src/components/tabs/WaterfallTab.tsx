@@ -1,15 +1,21 @@
-import type { TraceRequest } from '../../types/trace';
-import { formatMs } from '../../utils/viewport';
+import type { TraceRequest } from "../../types/trace";
+import { formatMs } from "../../utils/viewport";
 
-interface Props { request: TraceRequest }
+interface Props {
+  request: TraceRequest;
+}
 
 const PHASES = [
-  { key: 'dns',     label: 'DNS Lookup',        color: '#a78bfa' },
-  { key: 'connect', label: 'Initial Connection', color: '#60a5fa' },
-  { key: 'ssl',     label: 'SSL Handshake',      color: '#34d399' },
-  { key: 'send',    label: 'Request Sent',       color: '#fbbf24' },
-  { key: 'wait',    label: 'Waiting (TTFB)',     color: '#4f8ef7' },
-  { key: 'receive', label: 'Content Download',   color: '#f472b6' },
+  { key: "dns", label: "DNS Lookup", color: "var(--phase-dns)" },
+  {
+    key: "connect",
+    label: "Initial Connection",
+    color: "var(--phase-connect)",
+  },
+  { key: "ssl", label: "SSL Handshake", color: "var(--phase-ssl)" },
+  { key: "send", label: "Request Sent", color: "var(--phase-send)" },
+  { key: "wait", label: "Waiting (TTFB)", color: "var(--phase-wait)" },
+  { key: "receive", label: "Content Download", color: "var(--phase-receive)" },
 ] as const;
 
 export function WaterfallTab({ request }: Props) {
@@ -17,7 +23,14 @@ export function WaterfallTab({ request }: Props) {
 
   // Compute cumulative offsets using reduce (no mutable variables)
   const phasesWithOffsets = PHASES.reduce<
-    Array<{ key: string; label: string; color: string; ms: number; startPercent: number; widthPercent: number }>
+    Array<{
+      key: string;
+      label: string;
+      color: string;
+      ms: number;
+      startPercent: number;
+      widthPercent: number;
+    }>
   >((acc, phase) => {
     const ms = timing[phase.key];
     const offset = acc.reduce((s, p) => s + p.ms, 0);
@@ -28,16 +41,27 @@ export function WaterfallTab({ request }: Props) {
 
   return (
     <div className="p-3 space-y-3">
-      <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>
+      <div
+        className="text-xs font-semibold uppercase tracking-wide mb-2"
+        style={{ color: "var(--text-muted)" }}
+      >
         Timing Breakdown
       </div>
       <div className="space-y-1.5">
-        {phasesWithOffsets.map(phase => {
+        {phasesWithOffsets.map((phase) => {
           const { ms, startPercent, widthPercent } = phase;
           return (
             <div key={phase.key} className="flex items-center gap-2 text-xs">
-              <span className="w-32 text-right flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{phase.label}</span>
-              <div className="flex-1 relative h-4 rounded overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+              <span
+                className="w-32 text-right flex-shrink-0"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {phase.label}
+              </span>
+              <div
+                className="flex-1 relative h-4 rounded overflow-hidden"
+                style={{ background: "var(--bg-base)" }}
+              >
                 {ms > 0 && (
                   <div
                     className="absolute top-0 h-full rounded"
@@ -49,7 +73,12 @@ export function WaterfallTab({ request }: Props) {
                   />
                 )}
               </div>
-              <span className="w-12 text-right flex-shrink-0" style={{ color: ms > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+              <span
+                className="w-12 text-right flex-shrink-0"
+                style={{
+                  color: ms > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                }}
+              >
                 {formatMs(ms)}
               </span>
             </div>
@@ -58,10 +87,23 @@ export function WaterfallTab({ request }: Props) {
       </div>
 
       {/* Total */}
-      <div className="flex items-center gap-2 text-xs font-semibold pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-        <span className="w-32 text-right" style={{ color: 'var(--text-secondary)' }}>Total</span>
+      <div
+        className="flex items-center gap-2 text-xs font-semibold pt-2"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        <span
+          className="w-32 text-right"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Total
+        </span>
         <div className="flex-1" />
-        <span className="w-12 text-right" style={{ color: 'var(--text-primary)' }}>{formatMs(duration)}</span>
+        <span
+          className="w-12 text-right"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {formatMs(duration)}
+        </span>
       </div>
     </div>
   );

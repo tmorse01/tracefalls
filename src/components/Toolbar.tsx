@@ -2,6 +2,18 @@ import React from "react";
 import { useStore } from "../state/store";
 import { SCENARIOS } from "../data/scenarios";
 import type { SortKey, StatusBucket } from "../types/trace";
+import * as Select from "@radix-ui/react-select";
+import * as ToggleGroup from "@radix-ui/react-toggle-group";
+import * as Checkbox from "@radix-ui/react-checkbox";
+import * as Toggle from "@radix-ui/react-toggle";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+  ChevronDownIcon,
+  CheckIcon,
+} from "@radix-ui/react-icons";
 
 const STATUS_BUCKETS: StatusBucket[] = ["2xx", "3xx", "4xx", "5xx"];
 const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
@@ -14,18 +26,18 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 const STATUS_COLORS: Record<StatusBucket, string> = {
-  "2xx": "#34d399",
-  "3xx": "#60a5fa",
-  "4xx": "#f87171",
-  "5xx": "#fb923c",
-  pending: "#a78bfa",
+  "2xx": "var(--status-2xx)",
+  "3xx": "var(--status-3xx)",
+  "4xx": "var(--status-4xx)",
+  "5xx": "var(--status-5xx)",
+  pending: "var(--status-other)",
 };
 const METHOD_TEXT_COLORS: Record<string, string> = {
-  GET: "#60a5fa",
-  POST: "#34d399",
-  PUT: "#fbbf24",
-  DELETE: "#f87171",
-  PATCH: "#a78bfa",
+  GET: "var(--method-get)",
+  POST: "var(--method-post)",
+  PUT: "var(--method-put)",
+  DELETE: "var(--method-delete)",
+  PATCH: "var(--method-patch)",
 };
 
 interface ToolbarProps {
@@ -42,25 +54,56 @@ export function Toolbar({ searchRef }: ToolbarProps) {
       style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}
     >
       {/* Scenario selector */}
-      <select
+      <Select.Root
         value={state.scenario.id}
-        onChange={(e) =>
-          dispatch({ type: "SET_SCENARIO", scenarioId: e.target.value })
+        onValueChange={(value) =>
+          dispatch({ type: "SET_SCENARIO", scenarioId: value })
         }
-        className="rounded px-2 py-1 text-xs cursor-pointer focus:outline-none"
-        style={{
-          background: "var(--bg-base)",
-          color: "var(--text-primary)",
-          border: "1px solid var(--border)",
-        }}
-        aria-label="Scenario"
       >
-        {SCENARIOS.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.label} ({s.requestCount})
-          </option>
-        ))}
-      </select>
+        <Select.Trigger
+          className="rounded px-2 py-1 text-xs cursor-pointer focus:outline-none focus:ring-1 flex items-center justify-between gap-1"
+          style={{
+            background: "var(--bg-base)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--border)",
+          }}
+          aria-label="Scenario"
+        >
+          <Select.Value />
+          <Select.Icon asChild>
+            <ChevronDownIcon width={16} height={16} />
+          </Select.Icon>
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content
+            className="rounded shadow-lg overflow-hidden"
+            style={{
+              background: "var(--bg-base)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <Select.Viewport className="p-1">
+              {SCENARIOS.map((s) => (
+                <Select.Item
+                  key={s.id}
+                  value={s.id}
+                  className="px-2 py-1.5 text-xs cursor-pointer rounded focus:outline-none focus:ring-1 flex items-center justify-between gap-2 hover:opacity-80"
+                  style={{
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  <Select.ItemText>
+                    {s.label} ({s.requestCount})
+                  </Select.ItemText>
+                  <Select.ItemIndicator asChild>
+                    <CheckIcon width={14} height={14} />
+                  </Select.ItemIndicator>
+                </Select.Item>
+              ))}
+            </Select.Viewport>
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
 
       <div className="h-4 w-px" style={{ background: "var(--border)" }} />
 
@@ -85,73 +128,122 @@ export function Toolbar({ searchRef }: ToolbarProps) {
       <div className="h-4 w-px" style={{ background: "var(--border)" }} />
 
       {/* Status buckets */}
-      <div className="flex gap-1" role="group" aria-label="Status filter">
-        {STATUS_BUCKETS.map((b) => {
-          const active = filters.statusBuckets.includes(b);
-          return (
-            <button
-              key={b}
-              onClick={() =>
-                dispatch({ type: "TOGGLE_STATUS_BUCKET", bucket: b })
-              }
-              className="px-2 py-0.5 rounded text-xs font-medium transition-opacity"
-              style={{
-                background: active ? STATUS_COLORS[b] + "33" : "transparent",
-                color: STATUS_COLORS[b],
-                border: `1px solid ${active ? STATUS_COLORS[b] : "transparent"}`,
-              }}
-              aria-pressed={active}
-            >
-              {b}
-            </button>
+      <ToggleGroup.Root
+        type="multiple"
+        value={filters.statusBuckets}
+        onValueChange={(values) => {
+          const added = values.find(
+            (v) => !filters.statusBuckets.includes(v as StatusBucket),
           );
-        })}
-      </div>
+          const removed = filters.statusBuckets.find(
+            (v) => !values.includes(v),
+          );
+          if (added) {
+            dispatch({
+              type: "TOGGLE_STATUS_BUCKET",
+              bucket: added as StatusBucket,
+            });
+          } else if (removed) {
+            dispatch({ type: "TOGGLE_STATUS_BUCKET", bucket: removed });
+          }
+        }}
+        className="flex gap-1"
+        aria-label="Status filter"
+      >
+        {STATUS_BUCKETS.map((b) => (
+          <ToggleGroup.Item
+            key={b}
+            value={b}
+            className="px-2 py-0.5 rounded text-xs font-medium transition-colors data-[state=on]:opacity-100 opacity-60 hover:opacity-80"
+            style={{
+              background: filters.statusBuckets.includes(b)
+                ? STATUS_COLORS[b] + "33"
+                : "transparent",
+              color: STATUS_COLORS[b],
+              border: `1px solid ${
+                filters.statusBuckets.includes(b)
+                  ? STATUS_COLORS[b]
+                  : "transparent"
+              }`,
+            }}
+            aria-label={`Filter by ${b}`}
+          >
+            {b}
+          </ToggleGroup.Item>
+        ))}
+      </ToggleGroup.Root>
 
       <div className="h-4 w-px" style={{ background: "var(--border)" }} />
 
       {/* Method filters */}
-      <div className="flex gap-1" role="group" aria-label="Method filter">
-        {METHODS.map((m) => {
-          const active = filters.methods.includes(m);
-          return (
-            <button
-              key={m}
-              onClick={() => dispatch({ type: "TOGGLE_METHOD", method: m })}
-              className="px-2 py-0.5 rounded text-xs font-mono font-medium transition-opacity"
-              style={{
-                background: active
-                  ? METHOD_TEXT_COLORS[m] + "22"
-                  : "transparent",
-                color: METHOD_TEXT_COLORS[m],
-                border: `1px solid ${active ? METHOD_TEXT_COLORS[m] : "transparent"}`,
-              }}
-              aria-pressed={active}
-            >
-              {m}
-            </button>
-          );
-        })}
-      </div>
+      <ToggleGroup.Root
+        type="multiple"
+        value={filters.methods}
+        onValueChange={(values) => {
+          const added = values.find((v) => !filters.methods.includes(v));
+          const removed = filters.methods.find((v) => !values.includes(v));
+          if (added) {
+            dispatch({ type: "TOGGLE_METHOD", method: added });
+          } else if (removed) {
+            dispatch({ type: "TOGGLE_METHOD", method: removed });
+          }
+        }}
+        className="flex gap-1"
+        aria-label="Method filter"
+      >
+        {METHODS.map((m) => (
+          <ToggleGroup.Item
+            key={m}
+            value={m}
+            className="px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors data-[state=on]:opacity-100 opacity-60 hover:opacity-80"
+            style={{
+              background: filters.methods.includes(m)
+                ? METHOD_TEXT_COLORS[m] + "22"
+                : "transparent",
+              color: METHOD_TEXT_COLORS[m],
+              border: `1px solid ${
+                filters.methods.includes(m)
+                  ? METHOD_TEXT_COLORS[m]
+                  : "transparent"
+              }`,
+            }}
+            aria-label={`Filter by ${m}`}
+          >
+            {m}
+          </ToggleGroup.Item>
+        ))}
+      </ToggleGroup.Root>
 
       <div className="h-4 w-px" style={{ background: "var(--border)" }} />
 
       {/* Hide cached */}
-      <label
-        className="flex items-center gap-1.5 text-xs cursor-pointer"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        <input
-          type="checkbox"
+      <div className="flex items-center gap-1.5 text-xs">
+        <Checkbox.Root
           checked={filters.hideCached}
-          onChange={(e) =>
-            dispatch({ type: "SET_HIDE_CACHED", value: e.target.checked })
+          onCheckedChange={(checked) =>
+            dispatch({ type: "SET_HIDE_CACHED", value: !!checked })
           }
-          className="rounded"
+          className="w-4 h-4 rounded border cursor-pointer focus:outline-none focus:ring-1 flex items-center justify-center"
+          style={{
+            background: filters.hideCached
+              ? "var(--accent-blue)"
+              : "transparent",
+            color: "white",
+            borderColor: "var(--border)",
+          }}
           aria-label="Hide cached"
-        />
-        Hide cached
-      </label>
+        >
+          <Checkbox.Indicator className="flex items-center justify-center">
+            <CheckIcon width={12} height={12} />
+          </Checkbox.Indicator>
+        </Checkbox.Root>
+        <label
+          className="cursor-pointer"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Hide cached
+        </label>
+      </div>
 
       <div className="h-4 w-px" style={{ background: "var(--border)" }} />
 
@@ -160,38 +252,68 @@ export function Toolbar({ searchRef }: ToolbarProps) {
         <span style={{ color: "var(--text-muted)" }} className="text-xs">
           Sort:
         </span>
-        <select
+        <Select.Root
           value={sort.key}
-          onChange={(e) =>
+          onValueChange={(value) =>
             dispatch({
               type: "SET_SORT",
-              key: e.target.value as SortKey,
+              key: value as SortKey,
               direction: sort.direction,
             })
           }
-          className="rounded px-2 py-1 text-xs focus:outline-none"
-          style={{
-            background: "var(--bg-base)",
-            color: "var(--text-primary)",
-            border: "1px solid var(--border)",
-          }}
-          aria-label="Sort by"
         >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() =>
+          <Select.Trigger
+            className="rounded px-2 py-1 text-xs cursor-pointer focus:outline-none focus:ring-1 flex items-center justify-between gap-1"
+            style={{
+              background: "var(--bg-base)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+            }}
+            aria-label="Sort by"
+          >
+            <Select.Value />
+            <Select.Icon asChild>
+              <ChevronDownIcon width={14} height={14} />
+            </Select.Icon>
+          </Select.Trigger>
+          <Select.Portal>
+            <Select.Content
+              className="rounded shadow-lg overflow-hidden"
+              style={{
+                background: "var(--bg-base)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <Select.Viewport className="p-1">
+                {SORT_OPTIONS.map((o) => (
+                  <Select.Item
+                    key={o.value}
+                    value={o.value}
+                    className="px-2 py-1.5 text-xs cursor-pointer rounded focus:outline-none focus:ring-1 flex items-center justify-between gap-2 hover:opacity-80"
+                    style={{
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    <Select.ItemText>{o.label}</Select.ItemText>
+                    <Select.ItemIndicator asChild>
+                      <CheckIcon width={14} height={14} />
+                    </Select.ItemIndicator>
+                  </Select.Item>
+                ))}
+              </Select.Viewport>
+            </Select.Content>
+          </Select.Portal>
+        </Select.Root>
+        <Toggle.Root
+          pressed={sort.direction === "desc"}
+          onPressedChange={() =>
             dispatch({
               type: "SET_SORT",
               key: sort.key,
               direction: sort.direction === "asc" ? "desc" : "asc",
             })
           }
-          className="px-1.5 py-1 rounded text-xs"
+          className="rounded flex items-center justify-center w-7 h-7 focus:outline-none focus:ring-1 transition-colors data-[state=on]:opacity-100 opacity-60 hover:opacity-80"
           style={{
             background: "var(--bg-base)",
             color: "var(--text-secondary)",
@@ -199,15 +321,19 @@ export function Toolbar({ searchRef }: ToolbarProps) {
           }}
           aria-label={`Sort direction: ${sort.direction}`}
         >
-          {sort.direction === "asc" ? "↑" : "↓"}
-        </button>
+          {sort.direction === "asc" ? (
+            <ArrowUpIcon width={14} height={14} />
+          ) : (
+            <ArrowDownIcon width={14} height={14} />
+          )}
+        </Toggle.Root>
       </div>
 
       {/* Zoom controls */}
       <div className="flex gap-1 ml-auto">
-        <button
+        <Toggle.Root
           onClick={() => dispatch({ type: "ZOOM_VIEWPORT", factor: 1.5 })}
-          className="px-2 py-1 rounded text-xs font-medium transition-opacity hover:opacity-75"
+          className="rounded flex items-center justify-center w-7 h-7 focus:outline-none focus:ring-1 transition-colors opacity-60 hover:opacity-80"
           style={{
             background: "var(--bg-base)",
             color: "var(--text-secondary)",
@@ -216,11 +342,11 @@ export function Toolbar({ searchRef }: ToolbarProps) {
           title="Zoom in (+ key)"
           aria-label="Zoom in"
         >
-          +
-        </button>
-        <button
+          <ZoomInIcon width={14} height={14} />
+        </Toggle.Root>
+        <Toggle.Root
           onClick={() => dispatch({ type: "ZOOM_VIEWPORT", factor: 1 / 1.5 })}
-          className="px-2 py-1 rounded text-xs font-medium transition-opacity hover:opacity-75"
+          className="rounded flex items-center justify-center w-7 h-7 focus:outline-none focus:ring-1 transition-colors opacity-60 hover:opacity-80"
           style={{
             background: "var(--bg-base)",
             color: "var(--text-secondary)",
@@ -229,8 +355,8 @@ export function Toolbar({ searchRef }: ToolbarProps) {
           title="Zoom out (- key)"
           aria-label="Zoom out"
         >
-          −
-        </button>
+          <ZoomOutIcon width={14} height={14} />
+        </Toggle.Root>
       </div>
 
       {/* Row count */}

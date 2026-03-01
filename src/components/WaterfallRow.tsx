@@ -1,7 +1,13 @@
-import React, { useCallback, useRef } from 'react';
-import type { TraceRequest, ViewportState } from '../types/trace';
-import { useStore } from '../state/store';
-import { formatMs, formatBytes, statusBgClass, methodColor } from '../utils/viewport';
+import React, { useCallback, useRef } from "react";
+import type { TraceRequest, ViewportState } from "../types/trace";
+import { useStore } from "../state/store";
+import {
+  formatMs,
+  formatBytes,
+  statusBgClass,
+  methodColor,
+} from "../utils/viewport";
+import { LightningBoltIcon } from "@radix-ui/react-icons";
 
 interface WaterfallRowProps {
   request: TraceRequest;
@@ -12,12 +18,12 @@ interface WaterfallRowProps {
 }
 
 const PHASE_COLORS: Record<string, string> = {
-  dns:     '#a78bfa',
-  connect: '#60a5fa',
-  ssl:     '#34d399',
-  send:    '#fbbf24',
-  wait:    '#4f8ef7',
-  receive: '#f472b6',
+  dns: "var(--phase-dns)",
+  connect: "var(--phase-connect)",
+  ssl: "var(--phase-ssl)",
+  send: "var(--phase-send)",
+  wait: "var(--phase-wait)",
+  receive: "var(--phase-receive)",
 };
 
 function TimingTooltip({ request }: { request: TraceRequest }) {
@@ -26,17 +32,32 @@ function TimingTooltip({ request }: { request: TraceRequest }) {
   return (
     <div
       className="absolute z-50 left-full ml-2 top-0 rounded p-2 text-xs shadow-lg pointer-events-none whitespace-nowrap"
-      style={{ background: '#1e2230', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+      style={{
+        background: "var(--bg-row-hover)",
+        border: "1px solid var(--border)",
+        color: "var(--text-primary)",
+      }}
     >
       <div className="font-medium mb-1">{request.name}</div>
       {phases.map(([phase, ms]) => (
         <div key={phase} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PHASE_COLORS[phase] }} />
-          <span className="capitalize w-16" style={{ color: 'var(--text-secondary)' }}>{phase}</span>
+          <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ background: PHASE_COLORS[phase] }}
+          />
+          <span
+            className="capitalize w-16"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {phase}
+          </span>
           <span>{formatMs(ms)}</span>
         </div>
       ))}
-      <div className="mt-1 pt-1 font-medium" style={{ borderTop: '1px solid var(--border)' }}>
+      <div
+        className="mt-1 pt-1 font-medium"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
         Total: {formatMs(duration)}
       </div>
     </div>
@@ -44,7 +65,11 @@ function TimingTooltip({ request }: { request: TraceRequest }) {
 }
 
 export const WaterfallRow = React.memo(function WaterfallRow({
-  request, isSelected, viewport, leftColWidth, onClick,
+  request,
+  isSelected,
+  viewport,
+  leftColWidth,
+  onClick,
 }: WaterfallRowProps) {
   const { dispatch } = useStore();
   const rowRef = useRef<HTMLDivElement>(null);
@@ -54,13 +79,13 @@ export const WaterfallRow = React.memo(function WaterfallRow({
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
-    dispatch({ type: 'SET_HOVER_MS', ms: request.startMs });
+    dispatch({ type: "SET_HOVER_MS", ms: request.startMs });
     tooltipTimer.current = setTimeout(() => setShowTooltip(true), 400);
   }, [dispatch, request.startMs]);
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-    dispatch({ type: 'SET_HOVER_MS', ms: null });
+    dispatch({ type: "SET_HOVER_MS", ms: null });
     if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
     setShowTooltip(false);
   }, [dispatch]);
@@ -68,23 +93,24 @@ export const WaterfallRow = React.memo(function WaterfallRow({
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const windowMs = viewport.endMs - viewport.startMs;
-  const barLeft = windowMs > 0 ? ((request.startMs - viewport.startMs) / windowMs) * 100 : 0;
+  const barLeft =
+    windowMs > 0 ? ((request.startMs - viewport.startMs) / windowMs) * 100 : 0;
   const barWidth = windowMs > 0 ? (request.duration / windowMs) * 100 : 0;
 
   const phases = [
-    { key: 'dns',     ms: request.timing.dns },
-    { key: 'connect', ms: request.timing.connect },
-    { key: 'ssl',     ms: request.timing.ssl },
-    { key: 'send',    ms: request.timing.send },
-    { key: 'wait',    ms: request.timing.wait },
-    { key: 'receive', ms: request.timing.receive },
-  ].filter(p => p.ms > 0);
+    { key: "dns", ms: request.timing.dns },
+    { key: "connect", ms: request.timing.connect },
+    { key: "ssl", ms: request.timing.ssl },
+    { key: "send", ms: request.timing.send },
+    { key: "wait", ms: request.timing.wait },
+    { key: "receive", ms: request.timing.receive },
+  ].filter((p) => p.ms > 0);
 
   const bgColor = isSelected
-    ? 'var(--bg-row-selected)'
+    ? "var(--bg-row-selected)"
     : isHovered
-    ? 'var(--bg-row-hover)'
-    : 'transparent';
+      ? "var(--bg-row-hover)"
+      : "transparent";
 
   return (
     <div
@@ -93,8 +119,8 @@ export const WaterfallRow = React.memo(function WaterfallRow({
       style={{
         height: 28,
         background: bgColor,
-        borderColor: 'var(--border)',
-        transition: 'background 0.05s',
+        borderColor: "var(--border)",
+        transition: "background 0.05s",
       }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
@@ -103,20 +129,44 @@ export const WaterfallRow = React.memo(function WaterfallRow({
       aria-selected={isSelected}
     >
       {/* Left column */}
-      <div className="flex items-center gap-2 px-2 flex-shrink-0 overflow-hidden" style={{ width: leftColWidth, borderRight: '1px solid var(--border)' }}>
-        <span className={`text-xs font-mono font-semibold w-10 flex-shrink-0 ${methodColor(request.method)}`}>
+      <div
+        className="flex items-center gap-2 px-2 flex-shrink-0 overflow-hidden"
+        style={{ width: leftColWidth, borderRight: "1px solid var(--border)" }}
+      >
+        <span
+          className={`text-xs font-mono font-semibold w-10 flex-shrink-0 ${methodColor(request.method)}`}
+        >
           {request.method.slice(0, 4)}
         </span>
-        <span className="flex-1 text-xs truncate" style={{ color: 'var(--text-primary)' }} title={request.name}>
-          {request.cached ? '⚡ ' : ''}{request.name}
+        <span
+          className="flex-1 text-xs truncate flex items-center gap-1"
+          style={{ color: "var(--text-primary)" }}
+          title={request.name}
+        >
+          {request.cached && (
+            <LightningBoltIcon
+              width={18}
+              height={18}
+              style={{ color: "var(--accent-blue)", flexShrink: 0 }}
+            />
+          )}
+          <span className="truncate">{request.name}</span>
         </span>
-        <span className={`text-xs w-12 text-right flex-shrink-0 ${statusBgClass(request.status)}`}>
+        <span
+          className={`text-xs w-12 text-right flex-shrink-0 ${statusBgClass(request.status)}`}
+        >
           {request.status}
         </span>
-        <span className="text-xs w-12 text-right flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+        <span
+          className="text-xs w-12 text-right flex-shrink-0"
+          style={{ color: "var(--text-secondary)" }}
+        >
           {formatMs(request.duration)}
         </span>
-        <span className="text-xs w-12 text-right flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
+        <span
+          className="text-xs w-12 text-right flex-shrink-0"
+          style={{ color: "var(--text-muted)" }}
+        >
           {formatBytes(request.size)}
         </span>
       </div>
@@ -132,7 +182,7 @@ export const WaterfallRow = React.memo(function WaterfallRow({
             height: 12,
           }}
         >
-          {phases.map(p => (
+          {phases.map((p) => (
             <div
               key={p.key}
               style={{
@@ -145,9 +195,7 @@ export const WaterfallRow = React.memo(function WaterfallRow({
         </div>
 
         {/* Tooltip */}
-        {showTooltip && (
-          <TimingTooltip request={request} />
-        )}
+        {showTooltip && <TimingTooltip request={request} />}
       </div>
     </div>
   );

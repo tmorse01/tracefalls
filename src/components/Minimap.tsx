@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { useStore } from "../state/store";
-import { statusColor } from "../utils/viewport";
+import { resolveVar } from "../utils/viewport";
 
 const MINIMAP_HEIGHT = 40;
 
@@ -36,21 +36,32 @@ export function Minimap() {
     const total = viewport.totalMs || 1;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#181b22";
+    const rv = resolveVar;
+    ctx.fillStyle = rv("--bg-surface");
     ctx.fillRect(0, 0, W, H);
 
     for (const req of requests) {
       const x = (req.startMs / total) * W;
       const w = Math.max(1, ((req.endMs - req.startMs) / total) * W);
-      ctx.fillStyle = statusColor(req.status) + "99";
+      const statusVar =
+        req.status >= 200 && req.status < 300
+          ? "--status-2xx"
+          : req.status >= 300 && req.status < 400
+            ? "--status-3xx"
+            : req.status >= 400 && req.status < 500
+              ? "--status-4xx"
+              : req.status >= 500
+                ? "--status-5xx"
+                : "--status-other";
+      ctx.fillStyle = rv(statusVar) + "99";
       ctx.fillRect(x, H * 0.25, w, H * 0.5);
     }
 
     const winX = (viewport.startMs / total) * W;
     const winW = Math.max(2, ((viewport.endMs - viewport.startMs) / total) * W);
-    ctx.fillStyle = "rgba(79, 142, 247, 0.12)";
+    ctx.fillStyle = rv("--accent-glow");
     ctx.fillRect(winX, 0, winW, H);
-    ctx.strokeStyle = "#4f8ef7";
+    ctx.strokeStyle = rv("--accent-blue");
     ctx.lineWidth = 1;
     ctx.strokeRect(winX, 0, winW, H);
   }, [requests, viewport]);
