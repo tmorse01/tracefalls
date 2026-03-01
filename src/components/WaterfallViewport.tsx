@@ -1,11 +1,21 @@
 import React, { useRef, useCallback, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Table } from "@radix-ui/themes";
 import { useStore, useFilteredSortedRequests } from "../state/store";
-import { WaterfallRow } from "./WaterfallRow";
+import { WaterfallTableRow } from "./WaterfallTableRow";
+import { TableHeader, type ColumnDef } from "./TableHeader";
 import { formatMs } from "../utils/viewport";
 
 const ROW_HEIGHT = 28;
-const LEFT_COL_WIDTH = 380;
+
+const COLUMNS: ColumnDef[] = [
+  { key: "method", label: "Method", minWidth: 40, maxWidth: 80, width: 50 },
+  { key: "name", label: "Name", minWidth: 200, maxWidth: 600, width: 280 },
+  { key: "status", label: "Status", minWidth: 45, maxWidth: 80, width: 50 },
+  { key: "time", label: "Time", minWidth: 50, maxWidth: 100, width: 60 },
+  { key: "size", label: "Size", minWidth: 50, maxWidth: 100, width: 60 },
+];
+
 const TICK_COUNT = 8;
 
 export function WaterfallViewport() {
@@ -21,8 +31,16 @@ export function WaterfallViewport() {
     overscan: 10,
   });
 
-  const { viewport } = state;
+  const { viewport, ui } = state;
+  const columnWidths = ui.columnWidths;
   const windowMs = viewport.endMs - viewport.startMs;
+
+  const leftColsWidth = useMemo(() => {
+    return COLUMNS.reduce(
+      (sum, col) => sum + (columnWidths[col.key] || col.width),
+      0,
+    );
+  }, [columnWidths]);
 
   const ticks = useMemo(() => {
     const result: { ms: number; label: string }[] = [];
@@ -37,8 +55,8 @@ export function WaterfallViewport() {
     (e: React.WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const px = e.clientX - rect.left - LEFT_COL_WIDTH;
-        const W = rect.width - LEFT_COL_WIDTH;
+        const px = e.clientX - rect.left - leftColsWidth;
+        const W = rect.width - leftColsWidth;
         if (W <= 0) return;
         const centerMs = viewport.startMs + (px / W) * windowMs;
         const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
@@ -46,13 +64,13 @@ export function WaterfallViewport() {
       } else if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         const W =
           (e.currentTarget as HTMLElement).getBoundingClientRect().width -
-          LEFT_COL_WIDTH;
+          leftColsWidth;
         if (W <= 0) return;
         const deltaMs = (e.deltaX / W) * windowMs;
         dispatch({ type: "PAN_VIEWPORT", deltaMs });
       }
     },
-    [viewport, windowMs, dispatch],
+    [viewport, windowMs, leftColsWidth, dispatch],
   );
 
   const handleRowClick = useCallback(
@@ -114,7 +132,7 @@ export function WaterfallViewport() {
       if (!dragRef.current.active) return;
       const W =
         (e.currentTarget as HTMLElement).getBoundingClientRect().width -
-        LEFT_COL_WIDTH;
+        leftColsWidth;
       if (W <= 0) return;
       const deltaMs = -((e.clientX - dragRef.current.startX) / W) * windowMs;
       const { startMs: origStart, endMs: origEnd } = dragRef.current;
@@ -130,7 +148,7 @@ export function WaterfallViewport() {
         },
       });
     },
-    [viewport.totalMs, windowMs, dispatch],
+    [viewport.totalMs, windowMs, leftColsWidth, dispatch],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -142,6 +160,13 @@ export function WaterfallViewport() {
     dispatch({ type: "SET_HOVER_MS", ms: null });
   }, [dispatch]);
 
+  const handleColumnWidthsChange = useCallback(
+    (widths: Record<string, number>) => {
+      dispatch({ type: "SET_COLUMN_WIDTHS", widths });
+    },
+    [dispatch],
+  );
+
   return (
     <div
       ref={containerRef}
@@ -152,84 +177,15 @@ export function WaterfallViewport() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Timeline axis header */}
-      <div
-        className="flex flex-col flex-shrink-0 border-b text-xs"
-        style={{
-          background: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          height: 52,
-        }}
-      >
-        {/* Timeline tickers row */}
-        <div className="flex-1 relative overflow-hidden">
-          {ticks.map((t, i) => (
-            <div
-              key={i}
-              className="absolute top-0 flex flex-col items-center"
-              style={{
-                left: `${(i / TICK_COUNT) * 100}%`,
-                transform: "translateX(-50%)",
-              }}
-            >
-              <span
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: 10,
-                  paddingTop: 4,
-                }}
-              >
-                {t.label}
-              </span>
-            </div>
-          ))}
-        </div>
+      {/* Table Header with column definitions and timeline ticks */}
+      <TableHeader
+        columns={COLUMNS}
+        columnWidths={columnWidths}
+        onColumnWidthsChange={handleColumnWidthsChange}
+        ticks={ticks}
+      />
 
-        {/* Column headers row */}
-        <div
-          className="flex flex-shrink-0 items-center px-2 gap-2 border-t"
-          style={{
-            height: 26,
-            borderColor: "var(--border)",
-          }}
-        >
-          <div
-            className="flex items-center gap-2 flex-shrink-0"
-            style={{
-              width: LEFT_COL_WIDTH,
-              borderRight: "1px solid var(--border)",
-              paddingRight: 8,
-            }}
-          >
-            <span className="w-12" style={{ color: "var(--text-muted)" }}>
-              Method
-            </span>
-            <span className="flex-1" style={{ color: "var(--text-muted)" }}>
-              Name
-            </span>
-            <span
-              className="w-12 text-right"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Status
-            </span>
-            <span
-              className="w-12 text-right"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Time
-            </span>
-            <span
-              className="w-12 text-right"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Size
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Virtual rows */}
+      {/* Virtual table body */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-auto"
@@ -243,37 +199,45 @@ export function WaterfallViewport() {
             No requests match the current filters.
           </div>
         ) : (
-          <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              position: "relative",
-              width: "100%",
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const req = filteredRows[virtualRow.index];
-              const isSelected = state.selection.includes(req.id);
-              return (
-                <div
-                  key={req.id}
-                  style={{
-                    position: "absolute",
-                    top: virtualRow.start,
-                    width: "100%",
-                    height: ROW_HEIGHT,
-                  }}
-                >
-                  <WaterfallRow
-                    request={req}
-                    isSelected={isSelected}
-                    viewport={viewport}
-                    leftColWidth={LEFT_COL_WIDTH}
-                    onClick={(e) => handleRowClick(req.id, e)}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <Table.Root layout="fixed" role="presentation">
+            <Table.Body>
+              <div
+                style={{
+                  height: virtualizer.getTotalSize(),
+                  position: "relative",
+                  width: "100%",
+                }}
+              >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const req = filteredRows[virtualRow.index];
+                  const isSelected = state.selection.includes(req.id);
+                  return (
+                    <div
+                      key={req.id}
+                      style={{
+                        position: "absolute",
+                        top: virtualRow.start,
+                        width: "100%",
+                        height: ROW_HEIGHT,
+                      }}
+                    >
+                      <Table.Root layout="fixed" role="presentation">
+                        <Table.Body>
+                          <WaterfallTableRow
+                            request={req}
+                            isSelected={isSelected}
+                            viewport={viewport}
+                            columnWidths={columnWidths}
+                            onClick={(e) => handleRowClick(req.id, e)}
+                          />
+                        </Table.Body>
+                      </Table.Root>
+                    </div>
+                  );
+                })}
+              </div>
+            </Table.Body>
+          </Table.Root>
         )}
       </div>
     </div>

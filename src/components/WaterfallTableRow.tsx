@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useMemo } from "react";
+import React, { useCallback } from "react";
+import { Table } from "@radix-ui/themes";
 import type { TraceRequest, ViewportState } from "../types/trace";
 import { useStore } from "../state/store";
 import {
@@ -64,7 +65,7 @@ function TimingTooltip({ request }: { request: TraceRequest }) {
   );
 }
 
-export const WaterfallRow = React.memo(function WaterfallRow({
+export const WaterfallTableRow = React.memo(function WaterfallTableRow({
   request,
   isSelected,
   viewport,
@@ -72,10 +73,10 @@ export const WaterfallRow = React.memo(function WaterfallRow({
   onClick,
 }: WaterfallRowProps) {
   const { dispatch } = useStore();
-  const rowRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = React.useState(false);
   const [showTooltip, setShowTooltip] = React.useState(false);
-  const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tooltipTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timelineRef = React.useRef<HTMLTableCellElement>(null);
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -89,8 +90,6 @@ export const WaterfallRow = React.memo(function WaterfallRow({
     if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
     setShowTooltip(false);
   }, [dispatch]);
-
-  const timelineRef = useRef<HTMLDivElement>(null);
 
   const windowMs = viewport.endMs - viewport.startMs;
   const barLeft =
@@ -112,44 +111,52 @@ export const WaterfallRow = React.memo(function WaterfallRow({
       ? "var(--bg-row-hover)"
       : "transparent";
 
-  const gridTemplate = useMemo(() => {
-    return `${columnWidths.method || 50}px ${columnWidths.name || 280}px ${columnWidths.status || 50}px ${columnWidths.time || 60}px ${columnWidths.size || 60}px 1fr`;
-  }, [columnWidths]);
-
   return (
-    <div
-      ref={rowRef}
-      className="flex items-center cursor-pointer border-b relative"
+    <Table.Row
+      className="border-b cursor-pointer"
       style={{
         height: 28,
         background: bgColor,
         borderColor: "var(--border)",
         transition: "background 0.05s",
-        display: "grid",
-        gridTemplateColumns: gridTemplate,
       }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      role="row"
-      aria-selected={isSelected}
+      data-selected={isSelected}
     >
       {/* Method column */}
-      <div
-        className="flex items-center justify-center px-2 shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid var(--border)" }}
+      <Table.Cell
+        style={{
+          width: `${columnWidths.method || 50}px`,
+          height: 28,
+          padding: "0 8px",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
       >
         <span
           className={`text-xs font-mono font-semibold ${methodColor(request.method)}`}
         >
           {request.method.slice(0, 4)}
         </span>
-      </div>
+      </Table.Cell>
 
       {/* Name column */}
-      <div
-        className="flex items-center gap-1 px-2 shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid var(--border)" }}
+      <Table.Cell
+        style={{
+          width: `${columnWidths.name || 280}px`,
+          height: 28,
+          padding: "0 8px",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          overflow: "hidden",
+          gap: "4px",
+        }}
       >
         {request.cached && (
           <LightningBoltIcon
@@ -165,40 +172,70 @@ export const WaterfallRow = React.memo(function WaterfallRow({
         >
           {request.name}
         </span>
-      </div>
+      </Table.Cell>
 
       {/* Status column */}
-      <div
-        className="flex items-center justify-end px-2 shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid var(--border)" }}
+      <Table.Cell
+        style={{
+          width: `${columnWidths.status || 50}px`,
+          height: 28,
+          padding: "0 8px",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          overflow: "hidden",
+        }}
       >
         <span className={`text-xs ${statusBgClass(request.status)}`}>
           {request.status}
         </span>
-      </div>
+      </Table.Cell>
 
       {/* Time column */}
-      <div
-        className="flex items-center justify-end px-2 shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid var(--border)" }}
+      <Table.Cell
+        style={{
+          width: `${columnWidths.time || 60}px`,
+          height: 28,
+          padding: "0 8px",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          overflow: "hidden",
+          color: "var(--text-secondary)",
+        }}
       >
-        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          {formatMs(request.duration)}
-        </span>
-      </div>
+        <span className="text-xs">{formatMs(request.duration)}</span>
+      </Table.Cell>
 
       {/* Size column */}
-      <div
-        className="flex items-center justify-end px-2 shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid var(--border)" }}
+      <Table.Cell
+        style={{
+          width: `${columnWidths.size || 60}px`,
+          height: 28,
+          padding: "0 8px",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          overflow: "hidden",
+          color: "var(--text-muted)",
+        }}
       >
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {formatBytes(request.size)}
-        </span>
-      </div>
+        <span className="text-xs">{formatBytes(request.size)}</span>
+      </Table.Cell>
 
       {/* Timeline bar area */}
-      <div ref={timelineRef} className="flex-1 relative overflow-hidden h-full">
+      <Table.Cell
+        ref={timelineRef}
+        style={{
+          height: 28,
+          padding: 0,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
         {/* Bar */}
         <div
           className="absolute top-1/2 -translate-y-1/2 rounded-sm flex overflow-hidden"
@@ -222,7 +259,7 @@ export const WaterfallRow = React.memo(function WaterfallRow({
 
         {/* Tooltip */}
         {showTooltip && <TimingTooltip request={request} />}
-      </div>
-    </div>
+      </Table.Cell>
+    </Table.Row>
   );
 });
